@@ -122,11 +122,18 @@ async function handleCsv(event: Event) {
 
     const response = await api.post('/users/import', formData)
 
-    users.value = [mapUsers([response.data])[0], ...users.value]
+    const user = mapUsers([response.data])[0]
+
+    const index = users.value.findIndex((user) => user.email === user.email)
+
+    if (index !== -1) {
+      users.value[index] = user
+    } else {
+      users.value.unshift(user)
+    }
   } catch (error) {
     alert('Error al importar el archivo CSV.')
   } finally {
-    const target = event.target as HTMLInputElement
     target.value = ''
   }
 }
