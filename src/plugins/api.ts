@@ -10,12 +10,11 @@ class ApiError extends Error {
   }
 }
 
-const fetchApi = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
+const api = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
   const token = localStorage.getItem('token')
 
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    ...(options.headers || {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 
@@ -44,14 +43,25 @@ const fetchApi = async (endpoint: string, options: RequestInit = {}): Promise<an
 export { ApiError }
 
 export default {
-  get: (endpoint: string) => fetchApi(endpoint),
-  post: (endpoint: string, data: unknown) =>
-    fetchApi(endpoint, {
+  get: (endpoint: string) => api(endpoint),
+  post: (endpoint: string, data: unknown) => {
+    const isFormData = data instanceof FormData
+
+    return api(endpoint, {
       method: 'POST',
-      body: JSON.stringify(data),
-    }),
+      body: isFormData ? (data as BodyInit) : JSON.stringify(data),
+      headers: isFormData
+        ? {
+            Accept: 'application/json',
+          }
+        : {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+    })
+  },
   delete: (endpoint: string) =>
-    fetchApi(endpoint, {
+    api(endpoint, {
       method: 'DELETE',
     }),
 }
