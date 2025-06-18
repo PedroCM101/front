@@ -5,6 +5,11 @@
     <Loader v-if="loading" />
 
     <div v-else>
+      <div class="csv-container">
+        <button class="csv-btn" @click="addCsv">Importar CSV</button>
+        <input ref="csv" type="file" accept=".csv" @change="handleCsv" style="display: none" />
+      </div>
+
       <table class="users-table">
         <thead>
           <tr>
@@ -23,7 +28,15 @@
             <td>{{ user.phone }}</td>
             <td>{{ user.address }}</td>
             <td style="background: none; border: none; background-color: white">
-              <button class="delete-btn" @click="deleteUser(user.id)">Eliminar</button>
+              <button
+                v-if="deletingUser != user.id"
+                class="delete-btn"
+                @click="deleteUser(user.id)"
+              >
+                Eliminar
+              </button>
+
+              <Loader v-else />
             </td>
           </tr>
         </tbody>
@@ -48,9 +61,13 @@ interface User {
 
 const users = ref<User[]>([])
 const loading = ref(true)
+const deletingUser = ref(0)
+const csv = ref<HTMLInputElement | null>(null)
 
 const deleteUser = async (id: number) => {
   if (!confirm('¿Seguro que quieres eliminar este usuario?')) return
+
+  deletingUser.value = id
 
   try {
     await api.delete(`/users/${id}`)
@@ -58,25 +75,59 @@ const deleteUser = async (id: number) => {
   } catch (error) {
     console.error('Error al eliminar usuario', error)
   }
+
+  deletingUser.value = 0
 }
+
+function mapUsers(data: any[]): User[] {
+  return data.map((u) => ({
+    id: u.id,
+    name: u.name,
+    surname: u.surname,
+    email: u.email,
+    phone: u.phone,
+    address: u.address,
+  }))
+}
+
 const getUsers = async () => {
   loading.value = true
 
   try {
     const response = await api.get('/users')
 
-    users.value = response.data.map((u: any) => ({
-      id: u.id,
-      name: u.name,
-      surname: u.surname,
-      email: u.email,
-      phone: u.phone,
-      address: u.address,
-    }))
+    users.value = mapUsers(response.data)
   } catch (error) {
     console.error('Error al obtener usuarios', error)
   } finally {
     loading.value = false
+  }
+}
+
+function addCsv() {
+  csv.value?.click()
+}
+
+async function handleCsv(event: Event) {
+  const target = event.target as HTMLInputElement
+
+  const files = target.files
+
+  if (!files || files.length === 0) return
+
+  try {
+    const formData = new FormData()
+
+    formData.append('csv', files[0])
+
+    const response = await api.post('/users/import', formData)
+
+    users.value = [mapUsers([response.data])[0], ...users.value]
+  } catch (error) {
+    alert('Error al importar el archivo CSV.')
+  } finally {
+    const target = event.target as HTMLInputElement
+    target.value = ''
   }
 }
 
@@ -120,11 +171,28 @@ onMounted(async () => {
     padding: 0.4rem 0.6rem;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.3s;
 
     &:hover {
       background-color: #cc3636;
+    }
+  }
+
+  .csv-container {
+    margin-bottom: 24px;
+  }
+
+  .csv-btn {
+    background-color: #2ac7bf;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-weight: bold;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #0056b3;
     }
   }
 }
