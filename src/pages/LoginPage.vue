@@ -17,15 +17,17 @@
 
       <button :disabled="loading" type="submit" class="login-button">
         <span v-if="!loading">Iniciar Sesión</span>
-        <span v-else class="loader"></span>
+        <Loader v-else />
       </button>
     </form>
   </div>
 </template>
 
 <script lang="ts" setup>
+import Loader from '@/components/Loader.vue'
 import { ref } from 'vue'
 import api from '@/plugins/api'
+import router from '@/router'
 
 const email = ref('')
 const password = ref('')
@@ -41,6 +43,8 @@ const handleLogin = async () => {
     const token = response.token
 
     localStorage.setItem('token', token)
+
+    router.push('/users')
   } catch (error: any) {
     errorEmail.value = error.errors.email ? error.errors.email[0] : ''
 
