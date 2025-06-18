@@ -8,7 +8,7 @@ npm install
 
 ```bash
 git clone git@github.com:PedroCM101/front.git
-cd api
+cd front
 ```
 
 ## ⚙️ 2. Copiar el archivo de entorno
